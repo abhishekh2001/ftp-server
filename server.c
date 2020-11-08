@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+// For sendfile()
+#include <sys/sendfile.h>
 #define PORT 8000
 
 #define CHUNK_SIZE 4096
@@ -18,19 +20,49 @@ A SIGPIPE signal is raised if a thread sends on
 a broken stream (one that is no longer connected).
 */
 
-void handler(int num)
+int server_fd, new_socket, valread;
+int opt;
+struct sockaddr_in address;
+int addrlen = sizeof(address);
+
+int handle_client_input(char *buffer, int buff_len)
 {
-    printf("Handling sigpipe error\n");
+    printf("handling");
+
+    char *abc = (char *)malloc(sizeof(char) * strlen(buffer));
+    strcpy(abc, buffer);
+    char *tok;
+    char *ptr = abc;
+
+    char **argv = (char **)malloc(sizeof(char *) * strlen(abc));
+    int argc = 0;
+
+    while ((tok = strtok(ptr, " ")) != NULL)
+    {
+        argv[argc] = (char *)malloc(sizeof(char) * strlen(tok));
+        strcpy(argv[argc], tok);
+        argc++;
+        ptr = NULL;
+    }
+
+    for (int i = 0; i < argc; i++)
+        printf(": %s\n", argv[i]);
+
+    if (!strcmp(argv[0], "get"))
+    {
+        printf("SERVER MUST RETURN SEND FILES\n");
+        return 0;
+    }
+    return -1;
+
+    free(abc);
+    for (int i = 0; i < argc; i++)
+        free(argv[i]);
+    free(argv);
 }
 
 int main()
 {
-    signal(SIGPIPE, handler);
-
-    int server_fd, new_socket, valread;
-    int opt;
-    struct sockaddr_in address;
-    int addrlen = sizeof(address);
     char buffer[1024] = {0};
     char *hello = "Hello from server";
 
@@ -74,22 +106,15 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    printf("Listening...\n");
-    valread = read(new_socket, buffer, 1024); // read infromation received into the buffer
-    printf("%s\n", buffer);
-
-    
-
-    for (int i = 0; i < 10; i++)
+    while (1)
     {
-        char hello[1000];
-        sprintf(hello, "Hello %d", i);
-        if (send(new_socket, hello, strlen(hello), 0) < 0) // use sendto() and recvfrom() for DGRAM
+        if (recv(new_socket, buffer, 1020, 0) < 0)
         {
-            perror("Error sending");
+            perror("Error recieving from client");
             return -1;
         }
-        printf("Hello message sent\n");
-        sleep(2);
+
+        printf("Recieved %s from client\n", buffer);
+        handle_client_input(buffer, strlen(buffer));
     }
 }

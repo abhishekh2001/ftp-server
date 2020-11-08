@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+
+#include <sys/sendfile.h>
 #define PORT 8000
+#define BUFLEN 1024
 
 int main()
 {
@@ -12,7 +15,8 @@ int main()
     int socket_fd = 0, valread;
     struct sockaddr_in serv_addr;
     char *hello = "Hello from client";
-    char buffer[1024] = {0};
+    char buffer[BUFLEN] = {0};
+    size_t bufsize = 1024;
 
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0)
@@ -41,12 +45,22 @@ int main()
         return -1;
     }
 
-    send(socket_fd, hello, strlen(hello), 0); // send the message.
-    printf("Hello message sent\n");
+    printf("Here\n");
+
     while (1)
     {
-        valread = read(socket_fd, buffer, 1024); // receive message back from server, into the buffer
-        printf("%s\n", buffer);
+        size_t linesiz=0;
+        char* linebuf=0;
+        ssize_t linelen=0;
+
+        printf("> ");
+        getline(&linebuf, &linesiz, stdin);
+        
+        if (send(socket_fd, linebuf, strlen(linebuf), 0) < 0)
+        {
+            perror("Error sending");
+            return -1;
+        }
     }
     
     return 0;
