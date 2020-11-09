@@ -1,0 +1,6 @@
+FIX { get <file_i> } where file_i are incorrect
+possible reason is a stray recv within file descriptor
+    check clause
+
+example: get file1.file file2.file file3.file
+where none of the file exist on the servers
