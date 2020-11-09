@@ -68,7 +68,7 @@ int handle_client_input(char *buffer, int buff_len)
             printf("Getting %s\n", filename);
 
             fd = open(filename, O_RDONLY);
-            if (fd < 1)
+            if (fd < 1)  //  Error opening file
             {
                 fprintf(stderr, "Cannot open file\n");
                 // send(new_socket,);  // Send failure message
