@@ -10,9 +10,10 @@
 #include <signal.h>
 // For sendfile()
 #include <sys/sendfile.h>
-#define PORT 8000
 
+#define PORT 8000
 #define CHUNK_SIZE 4096
+#define DONE "done"
 
 /*
 https://pubs.opengroup.org/onlinepubs/009695399/functions/xsh_chap02_10.html
@@ -23,70 +24,42 @@ A SIGPIPE signal is raised if a thread sends on
 a broken stream (one that is no longer connected).
 */
 
+void handler(int signo)
+{
+    printf("Received SIGPIPE\n");
+    exit(EXIT_SUCCESS);
+}
+
 int server_fd, new_socket, valread;
 int opt;
 struct sockaddr_in address;
 int addrlen = sizeof(address);
 
-int handle_client_input(char *buffer, int buff_len)
+int handle_client_input(char *cmd)
 {
-    
-    printf("handling");
-
     int fd;
-    char* filename;
+    char *filename;
 
-    char *abc = (char *)malloc(sizeof(char) * strlen(buffer));
-    strcpy(abc, buffer);
-    char *tok;
-    char *ptr = abc;
-
-    char **argv = (char **)malloc(sizeof(char *) * strlen(abc));
-    int argc = 0;
-
-    while ((tok = strtok(ptr, " ")) != NULL)
+    if (!strcmp(cmd, "get"))
     {
-        argv[argc] = (char *)malloc(sizeof(char) * strlen(tok));
-        strcpy(argv[argc], tok);
-        argc++;
-        ptr = NULL;
-    }
+        printf("Getting file\n");
 
-    for (int i = 0; i < argc; i++)
-        printf(": %s\n", argv[i]);
-
-    if (!strcmp(argv[0], "get"))
-    {
-        if (argc <= 1) {
-            fprintf(stderr, "get error: Must provide at least one file name\n");
-            return -1;
-        }
-        
-        for (int i = 1; i < argc; i++)
-        {
-            char* filename = argv[i];
-            printf("Getting %s\n", filename);
-
-            fd = open(filename, O_RDONLY);
-            if (fd < 1)  //  Error opening file
-            {
-                fprintf(stderr, "Cannot open file\n");
-                // send(new_socket,);  // Send failure message
-                continue;
-            }
-        }
+        // fd = open(filename, O_RDONLY);
+        // if (fd < 1) //  Error opening file
+        // {
+        //     fprintf(stderr, "Cannot open file\n");
+        //     // send(new_socket,);  // Send failure message
+        //     return -1;
+        // }
         return 0;
     }
     return -1;
-
-    free(abc);
-    for (int i = 0; i < argc; i++)
-        free(argv[i]);
-    free(argv);
 }
 
 int main()
 {
+    signal(SIGPIPE, handler);
+
     char buffer[1024] = {0};
     char *hello = "Hello from server";
 
@@ -139,6 +112,11 @@ int main()
         }
 
         printf("Recieved %s from client\n", buffer);
-        handle_client_input(buffer, strlen(buffer));
+        if (send(new_socket, DONE, strlen(DONE), 0) == -1)
+        {
+            perror("Error sending to socket");
+            return -1;
+        }
+        handle_client_input(buffer);
     }
 }
