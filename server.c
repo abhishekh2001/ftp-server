@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 // For sendfile()
@@ -27,7 +30,11 @@ int addrlen = sizeof(address);
 
 int handle_client_input(char *buffer, int buff_len)
 {
+    
     printf("handling");
+
+    int fd;
+    char* filename;
 
     char *abc = (char *)malloc(sizeof(char) * strlen(buffer));
     strcpy(abc, buffer);
@@ -50,7 +57,24 @@ int handle_client_input(char *buffer, int buff_len)
 
     if (!strcmp(argv[0], "get"))
     {
-        printf("SERVER MUST RETURN SEND FILES\n");
+        if (argc <= 1) {
+            fprintf(stderr, "get error: Must provide at least one file name\n");
+            return -1;
+        }
+        
+        for (int i = 1; i < argc; i++)
+        {
+            char* filename = argv[i];
+            printf("Getting %s\n", filename);
+
+            fd = open(filename, O_RDONLY);
+            if (fd < 1)
+            {
+                fprintf(stderr, "Cannot open file\n");
+                // send(new_socket,);  // Send failure message
+                continue;
+            }
+        }
         return 0;
     }
     return -1;

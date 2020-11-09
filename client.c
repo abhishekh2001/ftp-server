@@ -55,7 +55,7 @@ int main()
 
         printf("> ");
         getline(&linebuf, &linesiz, stdin);
-        
+
         if (send(socket_fd, linebuf, strlen(linebuf), 0) < 0)
         {
             perror("Error sending");
