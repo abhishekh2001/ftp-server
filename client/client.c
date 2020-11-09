@@ -42,8 +42,8 @@ int handle_input(char *inp)
     while ((tok = strtok(ptr, " ")) != NULL)
     {
         argv[argc] = (char *)malloc(sizeof(char) * strlen(tok));
-        if (tok[strlen(tok)-1] == '\n')
-            tok[strlen(tok)-1] = '\0';
+        if (tok[strlen(tok) - 1] == '\n')
+            tok[strlen(tok) - 1] = '\0';
         strcpy(argv[argc], tok);
         argc++;
         ptr = NULL;
@@ -131,14 +131,17 @@ int handle_input(char *inp)
 
             printf("File <%s> on server is of size %d bytes\n", argv[i], f_size);
 
-            int tot = 0;
+            u_int tot = 0;
             while (tot < f_size)
             {
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
                 int b = recv(socket_fd, buffer, 10024, 0);
                 tot += b;
-                printf(": %s - \n", buffer);
+                // printf(": %s - \n", buffer);
                 write(fd, buffer, strlen(buffer));
+
+                printf("\rReceived: %f percentage", ((float)tot / f_size) * 100);
+                fflush(stdout);
 
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
                 strcpy(buffer, "DONE");
