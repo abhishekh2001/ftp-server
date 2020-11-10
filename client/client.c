@@ -12,10 +12,9 @@
 #define PORT 8000
 #define BUFFSIZE 1024
 
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-
+#define KNRM "\x1B[0m"
+#define KRED "\x1B[31m"
+#define KGRN "\x1B[32m"
 
 struct sockaddr_in address;
 int socket_fd = 0, valread;
@@ -115,13 +114,13 @@ int handle_input(char *inp)
             }
             printf("Filename ack received\n");
 
-            int f_size;
-            if (recv(socket_fd, &f_size, sizeof(int), 0) == -1)
+            long long int f_size;
+            if (recv(socket_fd, &f_size, sizeof(long long int), 0) == -1)
             {
                 perror("Error while receiving filesize");
                 return -1;
             }
-            printf("received filesize %d\n", f_size);
+            printf("received filesize %lld\n", f_size);
 
             memset(buffer, '\0', sizeof(char) * BUFFSIZE);
             strcpy(buffer, "DONE");
@@ -132,13 +131,13 @@ int handle_input(char *inp)
             }
             printf("Filesize ack sent\n");
 
-            if (f_size == 0)
+            if (f_size == -1)
             {
-                printf(KRED "File <%s> does not exist on server or is empty\n" KNRM, argv[i]);
+                printf(KRED "File <%s> does not exist on server.\n" KNRM, argv[i]);
                 continue;
             }
 
-            printf("File <%s> on server is of size %d bytes\n", argv[i], f_size);
+            printf("File <%s> on server is of size %lld bytes\n", argv[i], f_size);
 
             int fd = open(argv[i], O_CREAT | O_RDWR | O_TRUNC | O_APPEND, 0666);
             if (fd == -1)
@@ -146,8 +145,15 @@ int handle_input(char *inp)
                 perror("Error opening file");
                 continue;
             }
+            if (f_size == 0)
+            {
+                printf(KGRN "Received: 100.0 percentage\n" KNRM);
+                printf(KGRN "Recieved %s\n" KNRM, argv[i]);
 
-            int tot = 0;
+                continue;
+            }
+
+            long long int tot = 0;
             while (tot < f_size)
             {
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
@@ -168,7 +174,7 @@ int handle_input(char *inp)
                 }
             }
             close(fd);
-            printf(KGRN "Recieved %s\n" KNRM, argv[i]);
+            printf(KGRN "\nRecieved %s\n" KNRM, argv[i]);
         }
     }
     else if (!strcmp(argv[0], "exit"))
@@ -245,8 +251,8 @@ int main()
         //     linebuf[strlen(linebuf)-1] = '\0';
         // }
 
-        if (linebuf[chars-1] == '\n')
-            linebuf[chars-1] = '\0';
+        if (linebuf[chars - 1] == '\n')
+            linebuf[chars - 1] = '\0';
 
         if (handle_input(linebuf) < 0)
         {

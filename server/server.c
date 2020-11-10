@@ -40,7 +40,8 @@ int handle_client_input(char *cmd)
     printf("inside handle, trying %s\n", cmd);
     if (!strcmp(cmd, "get"))
     {
-        int fd, filenums, f_size, b;
+        int fd, filenums, b;
+        long long int f_size;
         char filename[10000];
         struct stat st;
 
@@ -88,7 +89,7 @@ int handle_client_input(char *cmd)
             if (fd < 1) //  Error opening file
             {
                 printf("Sending f_size\n");
-                f_size = 0;
+                f_size = -1;
                 if (send(new_socket, &f_size, sizeof(f_size), 0) == -1)
                 {
                     perror("Error sending filesize");
@@ -107,7 +108,7 @@ int handle_client_input(char *cmd)
             }
             stat(filename, &st);
             f_size = st.st_size;
-            printf("File <%s> is of size %d\n", filename, f_size);
+            printf("File <%s> is of size %lld\n", filename, f_size);
 
             printf("Sending f_size\n");
             if (send(new_socket, &f_size, sizeof(f_size), 0) == -1)
