@@ -135,7 +135,7 @@ int handle_input(char *inp)
             while (tot < f_size)
             {
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
-                int b = recv(socket_fd, buffer, 10024, 0);
+                int b = recv(socket_fd, buffer, 1023, 0);
                 tot += b;
                 // printf(": %s - \n", buffer);
                 write(fd, buffer, strlen(buffer));

@@ -4,3 +4,9 @@ possible reason is a stray recv within file descriptor
 
 example: get file1.file file2.file file3.file
 where none of the file exist on the servers
+
+example: get file1.file file2.file file3.file test.file
+only test.file exists
+
+-------- FIXED ------------
+Possible solution: ... buffer size differences between client and server
