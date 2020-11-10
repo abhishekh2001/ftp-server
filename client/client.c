@@ -30,7 +30,7 @@ int check_con()
         perror("Error receiving ack from server");
         return -1;
     }
-    printf("Ack received %s\n", ack);
+    // printf("Ack received %s\n", ack);
     return 0;
 }
 
@@ -49,17 +49,17 @@ int handle_input(char *inp)
         argv[argc] = (char *)malloc(sizeof(char) * strlen(tok));
         if (tok[strlen(tok) - 1] == '\n')
         {
-            printf("deling newline\n");
+            // printf("deling newline\n");
             tok[strlen(tok) - 1] = '\0';
         }
-        printf("tokenizing: %s\n", tok);
+        // printf("tokenizing: %s\n", tok);
         strcpy(argv[argc], tok);
         argc++;
         ptr = NULL;
     }
 
-    for (int i = 0; i < argc; i++)
-        printf(": %s\n", argv[i]);
+    // for (int i = 0; i < argc; i++)
+    //     printf(": %s\n", argv[i]);
 
     if (argc == 0)
     {
@@ -99,7 +99,7 @@ int handle_input(char *inp)
 
         for (int i = 1; i < argc; i++)
         {
-            printf("Requesting server for file %s\n", argv[i]);
+            // printf("Requesting server for file %s\n", argv[i]);
             memset(buffer, 0, BUFFSIZE);
             strcpy(buffer, argv[i]);
             if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
@@ -107,12 +107,12 @@ int handle_input(char *inp)
                 perror("Error while sending filename");
                 return -1;
             }
-            printf("Sent filename\n");
+            // printf("Sent filename\n");
             if (check_con() == -1)
             {
                 return -1;
             }
-            printf("Filename ack received\n");
+            // printf("Filename ack received\n");
 
             long long int f_size;
             if (recv(socket_fd, &f_size, sizeof(long long int), 0) == -1)
@@ -120,7 +120,7 @@ int handle_input(char *inp)
                 perror("Error while receiving filesize");
                 return -1;
             }
-            printf("received filesize %lld\n", f_size);
+            // printf("received filesize %lld\n", f_size);
 
             memset(buffer, '\0', sizeof(char) * BUFFSIZE);
             strcpy(buffer, "DONE");
@@ -129,7 +129,7 @@ int handle_input(char *inp)
                 perror("Error while sending filesize ack");
                 return -1;
             }
-            printf("Filesize ack sent\n");
+            // printf("Filesize ack sent\n");
 
             if (f_size == -1)
             {
