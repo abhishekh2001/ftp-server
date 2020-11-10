@@ -12,6 +12,11 @@
 #define PORT 8000
 #define BUFFSIZE 1024
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+
+
 struct sockaddr_in address;
 int socket_fd = 0, valread;
 struct sockaddr_in serv_addr;
@@ -40,11 +45,15 @@ int handle_input(char *inp)
     char **argv = (char **)malloc(sizeof(char *) * strlen(abc));
     int argc = 0;
 
-    while ((tok = strtok(ptr, " ")) != NULL)
+    while ((tok = strtok(ptr, " \t\n")) != NULL)
     {
         argv[argc] = (char *)malloc(sizeof(char) * strlen(tok));
         if (tok[strlen(tok) - 1] == '\n')
+        {
+            printf("deling newline\n");
             tok[strlen(tok) - 1] = '\0';
+        }
+        printf("tokenizing: %s\n", tok);
         strcpy(argv[argc], tok);
         argc++;
         ptr = NULL;
@@ -61,8 +70,8 @@ int handle_input(char *inp)
     {
         if (argc == 1)
         {
-            fprintf(stderr, "Error get: usage{ get <filename...> }\n");
-            return -1;
+            fprintf(stderr, KRED "Error get: usage{ get <filename...> }\n" KNRM);
+            return 1;
         }
         memset(buffer, 0, BUFFSIZE);
         strcpy(buffer, argv[0]);
@@ -91,12 +100,6 @@ int handle_input(char *inp)
 
         for (int i = 1; i < argc; i++)
         {
-            int fd = open(argv[i], O_CREAT | O_RDWR | O_TRUNC | O_APPEND, 0666);
-            if (fd == -1)
-            {
-                perror("Error opening file");
-                continue;
-            }
             printf("Requesting server for file %s\n", argv[i]);
             memset(buffer, 0, BUFFSIZE);
             strcpy(buffer, argv[i]);
@@ -131,11 +134,18 @@ int handle_input(char *inp)
 
             if (f_size == 0)
             {
-                printf("File <%s> does not exist on server\n", argv[i]);
+                printf(KRED "File <%s> does not exist on server or is empty\n" KNRM, argv[i]);
                 continue;
             }
 
             printf("File <%s> on server is of size %d bytes\n", argv[i], f_size);
+
+            int fd = open(argv[i], O_CREAT | O_RDWR | O_TRUNC | O_APPEND, 0666);
+            if (fd == -1)
+            {
+                perror("Error opening file");
+                continue;
+            }
 
             int tot = 0;
             while (tot < f_size)
@@ -146,7 +156,7 @@ int handle_input(char *inp)
                 // printf(": %s - \n", buffer);
                 write(fd, buffer, strlen(buffer));
 
-                printf("\rReceived: %f percentage", ((float)tot / f_size) * 100);
+                printf(KGRN "\rReceived: %f percentage" KNRM, ((float)tot / f_size) * 100);
                 fflush(stdout);
 
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
@@ -158,9 +168,32 @@ int handle_input(char *inp)
                 }
             }
             close(fd);
-            printf("\n-DONE-\n");
+            printf(KGRN "Recieved %s\n" KNRM, argv[i]);
         }
     }
+    else if (!strcmp(argv[0], "exit"))
+    {
+        memset(buffer, 0, BUFFSIZE);
+        strcpy(buffer, "exit");
+        if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
+        {
+            perror("while send exit signal");
+            return -1;
+        }
+        printf(KRED "Exitting client...\n" KRED);
+        for (int i = 0; i < argc; i++)
+        {
+            free(argv[i]);
+        }
+        free(argv);
+        free(abc);
+        return -2;
+    }
+    for (int i = 0; i < argc; i++)
+    {
+        free(argv[i]);
+    }
+    free(argv);
     free(abc);
 }
 
@@ -197,11 +230,12 @@ int main()
 
     while (1)
     {
-        char *linebuf = 0;
-        ssize_t linelen = 0;
+        char *linebuf = NULL;
+        size_t linelen = 0;
 
-        printf("> ");
-        getline(&linebuf, &linelen, stdin);
+        printf("client> ");
+        ssize_t chars = getline(&linebuf, &linelen, stdin);
+        puts(linebuf);
 
         // trim
         // printf("this [%c]\n", linebuf[strlen(linebuf)-1]);
@@ -211,7 +245,14 @@ int main()
         //     linebuf[strlen(linebuf)-1] = '\0';
         // }
 
-        handle_input(linebuf);
+        if (linebuf[chars-1] == '\n')
+            linebuf[chars-1] = '\0';
+
+        if (handle_input(linebuf) < 0)
+        {
+            free(linebuf);
+            return 0;
+        }
 
         free(linebuf);
     }

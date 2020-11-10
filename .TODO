@@ -14,6 +14,10 @@ Possible solution: ... buffer size differences between client and server
 ========================================================================
 Error
 get test.file temp.file xxy.file large1.file hello.file
+and
+get large1.file temp.file oof.file yeet.file alice.file
+
+pet test.file temp.file xxy.file barge1.file hello.file
 
 output:
 > get test.file temp.file xxy.file large1.file hello.file
@@ -26,3 +30,6 @@ output:
 �
 / end output /
 note: filename on client is hello.file'\n'�'
+
+-------- FIXED --------- (?)
+possible solution: incorrect getline implementation

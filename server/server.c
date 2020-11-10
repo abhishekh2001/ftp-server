@@ -62,7 +62,6 @@ int handle_client_input(char *cmd)
             return -1;
         }
 
-
         printf("filenum = %d\n", filenums);
 
         // Send each file
@@ -75,7 +74,7 @@ int handle_client_input(char *cmd)
                 return -1;
             }
             strcpy(filename, buffer);
-            
+
             memset(buffer, '\0', sizeof(char) * BUFFSIZE);
             strcpy(buffer, "DONE");
             if (send(new_socket, buffer, BUFFSIZE, 0) == -1)
@@ -158,7 +157,12 @@ int handle_client_input(char *cmd)
 
         return 0;
     }
-    return -1;
+    else if (!strcmp(cmd, "exit"))
+    {
+        printf("Client has closed connection. Server quitting...\n");
+        return -2;
+    }
+    return 0;
 }
 
 int main()
@@ -209,7 +213,7 @@ int main()
 
     while (1)
     {
-        char inp[BUFFSIZE+100];
+        char inp[BUFFSIZE + 100];
         if (recv(new_socket, buffer, BUFFSIZE, 0) < 0)
         {
             perror("Error recieving from client");
@@ -225,6 +229,9 @@ int main()
             perror("Error sending to socket");
             return -1;
         }
-        handle_client_input(inp);
+        if (handle_client_input(inp) < 0)
+        {
+            return 0;
+        }
     }
 }
