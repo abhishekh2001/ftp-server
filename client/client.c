@@ -16,16 +16,17 @@ struct sockaddr_in address;
 int socket_fd = 0, valread;
 struct sockaddr_in serv_addr;
 char buffer[BUFFSIZE] = {0};
-char ack[2049] = {0};
+char ack[BUFFSIZE] = {0};
 size_t bufsize = 1024;
 
 int check_con()
 {
-    if (recv(socket_fd, ack, 1020, 0) == -1)
+    if (recv(socket_fd, ack, BUFFSIZE, 0) == -1)
     {
         perror("Error receiving ack from server");
         return -1;
     }
+    printf("Ack received %s\n", ack);
     return 0;
 }
 
@@ -63,7 +64,9 @@ int handle_input(char *inp)
             fprintf(stderr, "Error get: usage{ get <filename...> }\n");
             return -1;
         }
-        if (send(socket_fd, argv[0], strlen(argv[0]), 0) == -1)
+        memset(buffer, 0, BUFFSIZE);
+        strcpy(buffer, argv[0]);
+        if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
         {
             perror("Error sending");
             return -1;
@@ -74,8 +77,9 @@ int handle_input(char *inp)
         }
 
         // Send number of files
+        memset(buffer, 0, BUFFSIZE);
         sprintf(buffer, "%d", argc - 1);
-        if (send(socket_fd, buffer, strlen(buffer), 0) == -1)
+        if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
         {
             perror("Error sending");
             return -1;
@@ -94,7 +98,9 @@ int handle_input(char *inp)
                 continue;
             }
             printf("Requesting server for file %s\n", argv[i]);
-            if (send(socket_fd, argv[i], strlen(argv[i]), 0) == -1)
+            memset(buffer, 0, BUFFSIZE);
+            strcpy(buffer, argv[i]);
+            if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
             {
                 perror("Error while sending filename");
                 return -1;
@@ -116,7 +122,7 @@ int handle_input(char *inp)
 
             memset(buffer, '\0', sizeof(char) * BUFFSIZE);
             strcpy(buffer, "DONE");
-            if (send(socket_fd, buffer, strlen(buffer), 0) == -1)
+            if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
             {
                 perror("Error while sending filesize ack");
                 return -1;
@@ -131,7 +137,7 @@ int handle_input(char *inp)
 
             printf("File <%s> on server is of size %d bytes\n", argv[i], f_size);
 
-            u_int tot = 0;
+            int tot = 0;
             while (tot < f_size)
             {
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
@@ -145,7 +151,7 @@ int handle_input(char *inp)
 
                 memset(buffer, '\0', sizeof(char) * BUFFSIZE);
                 strcpy(buffer, "DONE");
-                if (send(socket_fd, buffer, strlen(buffer), 0) == -1)
+                if (send(socket_fd, buffer, BUFFSIZE, 0) == -1)
                 {
                     perror("Error while sending chunk ack");
                     return -1;

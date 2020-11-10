@@ -10,3 +10,19 @@ only test.file exists
 
 -------- FIXED ------------
 Possible solution: ... buffer size differences between client and server
+
+========================================================================
+Error
+get test.file temp.file xxy.file large1.file hello.file
+
+output:
+> get test.file temp.file xxy.file large1.file hello.file
+: get
+: test.file
+: temp.file
+: xxy.file
+: large1.file
+: hello.file
+�
+/ end output /
+note: filename on client is hello.file'\n'�'

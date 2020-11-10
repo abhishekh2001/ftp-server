@@ -33,31 +33,35 @@ int server_fd, new_socket, valread;
 int opt;
 struct sockaddr_in address;
 int addrlen = sizeof(address);
+char buffer[BUFFSIZE] = {0};
 
 int handle_client_input(char *cmd)
 {
-    char buffer[BUFFSIZE] = {0};
-
+    printf("inside handle, trying %s\n", cmd);
     if (!strcmp(cmd, "get"))
     {
         int fd, filenums, f_size, b;
         char filename[10000];
         struct stat st;
 
+        memset(buffer, '\0', BUFFSIZE);
         // Get number of file requests
-        if (recv(new_socket, buffer, 1020, 0) < 0)
+        if (recv(new_socket, buffer, BUFFSIZE, 0) < 0)
         {
             perror("Error recieving from client");
             return -1;
         }
+        printf("filenum %s\n", buffer);
+        filenums = atoi(buffer);
 
-        if (send(new_socket, DONE, strlen(DONE), 0) == -1)
+        memset(buffer, '\0', BUFFSIZE);
+        strcpy(buffer, "DONE");
+        if (send(new_socket, buffer, BUFFSIZE, 0) == -1)
         {
             perror("Error sending to socket");
             return -1;
         }
 
-        filenums = atoi(buffer);
 
         printf("filenum = %d\n", filenums);
 
@@ -65,18 +69,21 @@ int handle_client_input(char *cmd)
         for (int i = 0; i < filenums; i++)
         {
             memset(buffer, '\0', sizeof(char) * BUFFSIZE);
-            if (recv(new_socket, buffer, 1020, 0) == -1)
+            if (recv(new_socket, buffer, BUFFSIZE, 0) == -1)
             {
                 perror("Error recieving from client");
                 return -1;
             }
-            if (send(new_socket, DONE, strlen(DONE), 0) == -1)
+            strcpy(filename, buffer);
+            
+            memset(buffer, '\0', sizeof(char) * BUFFSIZE);
+            strcpy(buffer, "DONE");
+            if (send(new_socket, buffer, BUFFSIZE, 0) == -1)
             {
                 perror("Error sending to socket");
                 return -1;
             }
 
-            strcpy(filename, buffer);
             printf("SENDING FILE %s\n", filename);
             fd = open(filename, O_RDONLY);
             if (fd < 1) //  Error opening file
@@ -89,6 +96,7 @@ int handle_client_input(char *cmd)
                     return -1;
                 }
 
+                memset(buffer, '\0', BUFFSIZE);
                 printf("Sent f_size\n");
                 if (recv(new_socket, buffer, BUFFSIZE, 0) == -1)
                 {
@@ -102,20 +110,20 @@ int handle_client_input(char *cmd)
             f_size = st.st_size;
             printf("File <%s> is of size %d\n", filename, f_size);
 
-                printf("Sending f_size\n");
+            printf("Sending f_size\n");
             if (send(new_socket, &f_size, sizeof(f_size), 0) == -1)
             {
                 perror("Error sending filesize");
                 return -1;
             }
-                printf("Sent f_size\n");
+            printf("Sent f_size\n");
             if (recv(new_socket, buffer, BUFFSIZE, 0) == -1)
             {
                 perror("Error while recieving filesize ack");
                 return -1;
             }
 
-                printf("Received f_size ack\n");
+            printf("Received f_size ack\n");
 
             if (f_size == -1)
             {
@@ -123,11 +131,15 @@ int handle_client_input(char *cmd)
             }
 
             char linebuf[CHUNK_SIZE + 100] = {0};
-            memset(linebuf, '\0', sizeof(char) * (CHUNK_SIZE+10));
+            memset(linebuf, '\0', sizeof(char) * (CHUNK_SIZE + 10));
             while ((b = read(fd, linebuf, CHUNK_SIZE)) > 0)
             {
                 // printf("Sending size %d\n", b);
-                send(new_socket, linebuf, b, 0);
+                if (send(new_socket, linebuf, b, 0) == -1)
+                {
+                    perror("Error sending chunk");
+                    return -1;
+                }
 
                 memset(linebuf, '\0', sizeof(char) * CHUNK_SIZE);
 
@@ -153,7 +165,6 @@ int main()
 {
     signal(SIGPIPE, SIG_IGN);
 
-    char buffer[1024] = {0};
     char *hello = "Hello from server";
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -198,18 +209,22 @@ int main()
 
     while (1)
     {
-        if (recv(new_socket, buffer, 1020, 0) < 0)
+        char inp[BUFFSIZE+100];
+        if (recv(new_socket, buffer, BUFFSIZE, 0) < 0)
         {
             perror("Error recieving from client");
             return -1;
         }
-
         printf("Recieved %s from client\n", buffer);
-        if (send(new_socket, DONE, strlen(DONE), 0) == -1)
+        strcpy(inp, buffer);
+
+        memset(buffer, 0, BUFFSIZE);
+        strcpy(buffer, "DONE");
+        if (send(new_socket, buffer, BUFFSIZE, 0) == -1)
         {
             perror("Error sending to socket");
             return -1;
         }
-        handle_client_input(buffer);
+        handle_client_input(inp);
     }
 }
