@@ -241,7 +241,7 @@ int main()
 
         printf("client> ");
         ssize_t chars = getline(&linebuf, &linelen, stdin);
-        puts(linebuf);
+        // puts(linebuf);
 
         // trim
         // printf("this [%c]\n", linebuf[strlen(linebuf)-1]);
